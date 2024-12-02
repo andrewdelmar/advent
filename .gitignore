@@ -16,3 +16,7 @@ Cargo.lock
 
 # Advent of code input files
 **/input.txt
+
+# Haskell files
+*.hi
+*.o
