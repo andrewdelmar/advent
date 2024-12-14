@@ -4,11 +4,12 @@ def has_valid_eq(target, acc, parts):
     if not parts or acc > target:
         return False
 
-    part, *parts = parts;
+    part, *parts = parts
     valid_add = has_valid_eq(target, acc + part, parts)
     valid_mul = has_valid_eq(target, acc * part, parts)
-    
+
     return valid_add or valid_mul
+
 
 with open('input.txt') as input:
     total = 0
@@ -18,4 +19,3 @@ with open('input.txt') as input:
             total += target
 
     print(total)
-        

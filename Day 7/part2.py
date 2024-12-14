@@ -1,18 +1,16 @@
-def concat(a, b):
-    return int(str(a) + str(b))
-
 def has_valid_eq(target, acc, parts):
     if acc == target and not parts:
         return True
     if not parts or acc > target:
         return False
 
-    part, *parts = parts;
+    part, *parts = parts
     valid_concat = has_valid_eq(target, int(str(acc) + str(part)), parts)
     valid_add = has_valid_eq(target, acc + part, parts)
     valid_mul = has_valid_eq(target, acc * part, parts)
-    
+
     return valid_concat or valid_add or valid_mul
+
 
 with open('input.txt') as input:
     total = 0
@@ -22,4 +20,3 @@ with open('input.txt') as input:
             total += target
 
     print(total)
-        
