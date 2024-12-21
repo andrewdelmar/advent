@@ -74,16 +74,6 @@ func (c *CPU) run() (out []int64) {
 	return
 }
 
-func correctVals(prog, out []int64) int {
-	for i := range out {
-		if prog[i] != out[i] {
-			return i
-		}
-	}
-
-	return len(out)
-}
-
 func main() {
 	file, err := os.Open("input.txt")
 	if err != nil {
@@ -95,7 +85,7 @@ func main() {
 	scanner := bufio.NewScanner(file)
 
 	scanner.Scan()
-	var a int64
+	// Skip A.
 
 	scanner.Scan()
 	b := parseRegister(scanner.Text())
@@ -115,48 +105,54 @@ func main() {
 		prog = append(prog, n)
 	}
 
-	// By examining the program you can see it's output depends on processing A
-	// 3 bits at a from time LSB to MSB.
+	// By examining the program you can see it slowly shifts A to the right 3
+	// bits at a time until it's zero.
 	//
-	// So, we can progressively lock in the bits of A as we correctly guess the
-	// output. The output depends on the lower 3-11 bits of A so we can only
-	// lock in bits when we have 4 correct values (12 bits of data).
-	var guessVal, correctBits, correctVal int64
-	var bestGuess int
+	// That means the last output only depends on the 3 most significant bits,
+	// and the second last output then depends on the 6 MSB etc.
+	//
+	// So, we can cycle though guesses by changing 3 bits at a time from MSB
+	// to LSB.
+	var guessBits int64
+	currInd := len(prog) - 1
 
-	for {
-		a = (guessVal << correctBits) | correctVal
+	for currInd >= 0 {
+		currShift := int64(currInd) * 3
+		currMask := (int64(0b111) << currShift)
+		currBits := (guessBits & currMask) >> currShift
+		currBits++
+
+		// If we are above 0b111 we have run out of bits to change and need to
+		// retreat to a previous set of bits.
+		if currBits > 0b111 {
+			// Clear all the bits to the right of current shift.
+			ds := currShift
+			for ds >= 0 {
+				dm := (int64(0b111) << ds)
+				guessBits = guessBits & ^dm
+				ds -= 3
+			}
+
+			currInd++
+			continue
+		}
+
+		guessBits = (guessBits & ^currMask) | (currBits << currShift)
 
 		cpu := CPU{
 			ip:   0,
-			a:    a,
+			a:    guessBits,
 			b:    b,
 			c:    c,
 			prog: prog,
 		}
-
 		out := cpu.run()
 
-		guess := correctVals(prog, out)
-		if guess == len(prog) {
-			break
+		// Advance for every correct output.
+		for currInd >= 0 && out[currInd] == prog[currInd] {
+			currInd--
 		}
-
-		if guess > bestGuess+4 {
-
-			bestGuess++
-
-			correctBits += 3
-			badVals := ((^int64(0) >> correctBits) << correctBits)
-			correctVal = a & ^badVals
-
-			fmt.Printf("New best guess, A: %d, out: %v, correct bits: %d\n", a, out, correctBits)
-
-			guessVal = 0
-		}
-
-		guessVal++
 	}
 
-	fmt.Printf("Minimum A %d\n", a)
+	fmt.Printf("Minimum A %d\n", guessBits)
 }
