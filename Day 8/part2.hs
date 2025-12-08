@@ -9,7 +9,6 @@ parseCoord line =
    in (x, y, z)
 
 data Connection = Connection {a :: Coord, b :: Coord}
-  deriving (Show)
 
 instance Eq Connection where
   (==) (Connection la lb) (Connection ra rb) =
@@ -31,10 +30,7 @@ main = do
   input <- readFile "input.txt"
   let coords :: [(Int, Int, Int)] = map parseCoord $ lines input
   let cons = Set.fromList [Connection a b | a <- coords, b <- coords, a /= b]
-  
+
   let coordsSeen = scanl addCoords (Set.empty, 0) $ Set.elems cons
   let numCoords = length coords
-  let result = do
-        (_, cl) <- find ((==) numCoords . Set.size . fst) coordsSeen
-        return cl
-  print result
+  print $ snd <$> find ((==) numCoords . Set.size . fst) coordsSeen

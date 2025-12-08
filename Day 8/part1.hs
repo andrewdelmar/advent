@@ -10,7 +10,6 @@ parseCoord line =
    in (x, y, z)
 
 data Connection = Connection {a :: Coord, b :: Coord}
-  deriving (Show)
 
 instance Eq Connection where
   (==) (Connection la lb) (Connection ra rb) =
