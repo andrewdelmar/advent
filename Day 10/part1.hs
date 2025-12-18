@@ -1,43 +1,36 @@
-import Data.Bits
 import Data.List
 import Data.List.Split
 import Data.Maybe
 
-appendBit bits True = (bits .<<. 1) .|. 1
-appendBit bits False = bits .<<. 1
+data Machine = Machine {target :: [Bool], masks :: [[Bool]]}
 
-fromBitPoss = foldl (.|.) (0 :: Int) . map bit
+parseTarget = map (== '#')
 
-trim = tail . init
-
-parseMask str =
-  let poss = map read $ splitOn "," $ trim str
-   in fromBitPoss poss
-
-data Machine = Machine {numBits :: Int, target :: Int, masks :: [Int]}
+parseMask size str =
+  map (`elem` inds) [0 .. (size - 1)]
+  where
+    inds = map read $ splitOn "," str
 
 parseMachine line =
   let (ls : ms) = words line
-      lightStr = trim ls
-      lightPoss = elemIndices '#' lightStr
-      target = fromBitPoss lightPoss
-      masks = map parseMask (init ms)
-   in Machine (length lightStr) target masks
+      trim = tail . init
+      target = parseTarget $ trim ls
+      size = length target
+      masks = map (parseMask size . trim) (init ms)
+   in Machine target masks
 
-combineMasks masks bits =
-  let useMask = map (testBit bits) [0 .. length masks - 1]
-      usedMasks = map snd $ filter fst $ zip useMask masks
-   in foldl xor 0 usedMasks
+combos [] = [[]]
+combos (m : ms) = combos ms ++ [m : cs | cs <- combos ms]
 
-bestMaskCombo machine =
-  let nmbits = length (masks machine)
-      cbits = sortOn popCount [0 :: Int .. (1 .<<. nmbits) - 1]
-      validCombo bits = combineMasks (masks machine) bits == target machine
-      best = find validCombo cbits
-   in fromJust best
+bestValidCombo (Machine target masks) =
+  let xor a b = a /= b
+      comboXor = foldl1 (zipWith xor)
+      valid combo = all not $ comboXor (target : combo)
+   in fromJust $ find valid $ combos masks
 
 main = do
   input <- readFile "input.txt"
-  let machines = map parseMachine (lines input)
-  let bestCombos = map bestMaskCombo machines
-  print $ sum $ map popCount bestCombos
+  let machines = map parseMachine $ lines input
+  let bestValid = map bestValidCombo machines
+  let comboSize = map length bestValid
+  print $ sum comboSize
