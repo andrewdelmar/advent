@@ -7,10 +7,6 @@ parseNode line =
       connVals = map (,1) conns
    in (name, Map.fromList connVals)
 
-addConns = Map.unionWith (+)
-
-mulConns conns a = Map.map (* a) conns
-
 collapseNode nodes cNode =
   let cConns = nodes Map.! cNode
       updates = Map.mapWithKey (collapseInto cNode cConns) nodes
@@ -19,7 +15,8 @@ collapseNode nodes cNode =
 collapseInto cNode cConns node conns
   | cNode `Map.member` conns =
       let mult = conns Map.! cNode
-          newConns = conns `addConns` (cConns `mulConns` mult)
+          mulConns = Map.map (* mult) cConns
+          newConns = Map.unionWith (+) conns mulConns
        in Map.filterKeys (`notElem` [node, cNode]) newConns
   | otherwise = conns
 
