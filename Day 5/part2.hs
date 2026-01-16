@@ -1,12 +1,12 @@
 import Data.List
 
 parseSegment line =
-  [(read ss, 1), (read $ tail es, -1)]
+  [read ss, read es]
   where
-    (ss, es) = break (== '-') line
+    (ss, '-' : es) = break (== '-') line
 
-edgeSeg ((seg, ddir), depth) =
-  (ddir == -1 && depth == 0) || (ddir == 1 && depth == 1)
+edgeSeg dir depth =
+  (dir == -1 && depth == 0) || (dir == 1 && depth == 1)
 
 total (s : e : ts) = e - s + 1 + total ts
 total [] = 0
@@ -14,8 +14,10 @@ total [] = 0
 main = do
   input <- readFile "input.txt"
   let (fresh, _) = break (== "") (lines input)
-  let segs = sort $ concatMap parseSegment fresh
-  let depths = tail $ scanl (+) 0 $ map snd segs
-  let edges = map (fst . fst) $ filter edgeSeg $ zip segs depths
+  let segs :: [Int] = concatMap parseSegment fresh
+  let (ssegs, dirs) = unzip $ sort $ zip segs $ cycle [1, -1]
+  let depths = scanl1 (+) dirs
+  let edges = zipWith edgeSeg dirs depths
+  let edgeSegs = map fst $ filter snd $ zip ssegs edges
 
-  print $ total edges
+  print $ total edgeSegs
